@@ -43,6 +43,7 @@ export class SignalsStack extends cdk.Stack {
 
     // create cluster for our tasks
     const cluster = new ecs.Cluster(this, "SignalsCluster", {
+      clusterName: process.env.CDK_DEFAULT_ACCOUNT + '-signals-cluster',
       vpc: vpc
     });
 
@@ -58,6 +59,7 @@ export class SignalsStack extends cdk.Stack {
 
     // create role for our tasks
     const taskRole = new iam.Role(this, 'SignalsTaskRole', {
+      roleName: process.env.CDK_DEFAULT_ACCOUNT + '-signals-task-role',
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
       description: 'IAM role for our tasks',
       // inlinePolicies: {
@@ -151,6 +153,7 @@ export class SignalsStack extends cdk.Stack {
     });
 
     const glueRole = new iam.Role(this, 'SignalsGlueRole', {
+      roleName: process.env.CDK_DEFAULT_ACCOUNT + '-signals-glue-role',
       assumedBy: new iam.ServicePrincipal('glue.amazonaws.com'),
       description: 'SignalsGlueRole',
       managedPolicies: [

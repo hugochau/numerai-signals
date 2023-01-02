@@ -1,8 +1,9 @@
 # exit when any command fails
 set -e
 
-# build project
-make copy
+# build python app
+make all
+coverage run -m pytest -v && coverage report -m
 
 if [ "$1" == "dev" ];
 then
@@ -18,6 +19,7 @@ else
     git push
 fi
 
+# build/deploy cdk app
 npm install
 npm ci
 npm run build
