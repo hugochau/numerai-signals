@@ -134,11 +134,13 @@ export class SignalsStack extends cdk.Stack {
 
     // create schedule for cron event
     new events.Rule(this, 'SignalsRuleLoad', {
+      ruleName: process.env.CDK_DEFAULT_ACCOUNT + '-signals-load-cron',
       schedule: events.Schedule.cron({hour: '*/12', minute: '0'}),
       targets: [eventRuleTargetLoad],
     });
 
     new events.Rule(this, 'SignalsRuleTransform', {
+      ruleName: process.env.CDK_DEFAULT_ACCOUNT + '-signals-transform-cron',
       schedule: events.Schedule.cron({weekDay: 'SAT', hour: '1', minute: '0'}),
       targets: [eventRuleTargetTransform],
     });
