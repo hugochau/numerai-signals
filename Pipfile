@@ -1,0 +1,25 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+twine = "*"
+numpy = "*"
+pandas = "*"
+fastparquet = "*"
+ta = "*"
+mlflow = "*"
+s3fs = "*"
+six = ">=1.14"
+joblib = "*"
+future = "*"
+halo = "*"
+tqdm = "*"
+argparse = "*"
+
+[dev-packages]
+ipykernel = "*"
+
+[requires]
+python_version = "3.7"

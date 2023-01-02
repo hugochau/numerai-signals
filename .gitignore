@@ -1,0 +1,104 @@
+.vscode/
+.github
+
+*.egg-info
+# .coverage
+.ipynb_checkpoints
+.DS_Store
+# raw_data/
+# *.csv
+**/__pycache__/
+.env
+# # *.json
+# *.tsv
+# *.python-version
+# *.pkl
+# *.parquet
+# *.drawio
+.coverage
+
+*.js
+!jest.config.js
+*.d.ts
+
+
+node_modules
+!/node_modules
+/node_modules/*
+!/node_modules/.package-lock.json
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+!/cdk.out
+/cdk.out/*
+!/cdk.out/cdk.out
+
+# !/data/config
+# /data/config/*
+# !/data/config/blank
+
+!/data/credential
+/data/credential/*
+!/data/credential/blank
+
+!/data/log
+/data/log/*
+!/data/log/blank
+
+!/data/raw_data
+/data/raw_data/*
+!/data/raw_data/blank
+
+!/data/transform
+/data/transform/*
+!/data/transform/blank
+
+Pipfile.lock
+
+!/notebook
+/notebook/*
+!/notebook/.keep
+
+
+build
+dist
+
+!/docker/load
+/docker/load/*
+!/docker/load/Dockerfile
+
+!/docker/transform
+/docker/transform/*
+!/docker/transform/Dockerfile
+
+# !/docker/load/data/log
+# /docker/load/data/log/*
+# !/docker/load/data/log/blank
+
+# !/docker/load/data/credential
+# /docker/load/data/credential/*
+# !/docker/load/data/credential/blank
+
+# !/docker/transform/data/log
+# /docker/transform/data/log/*
+# !/docker/transform/data/log/blank
+
+# !/docker/transform/data/credential
+# /docker/transform/data/credential/*
+# !/docker/transform/data/credential/blank
+
+# !/docker/load/data/raw_data
+# /docker/load/data/raw_data/*
+# !/docker/load/data/raw_data/blank
+
+# !/docker/transform/data/transform
+# /docker/transform/data/transform/*
+# !/docker/transform/data/transform/blank
+
+# !/docker/transform/data/log
+# /docker/transform/data/log/*
+# !/docker/transform/data/log/blank
+
+log.txt

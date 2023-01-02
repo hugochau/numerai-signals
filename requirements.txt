@@ -1,0 +1,39 @@
+# you should consider adding only necessary pkg
+# when you move to a managed service such as cloud based container
+# you will pay for the size. the lightest the better!
+
+# packaging
+pip>=9
+setuptools>=26
+twine
+wheel>=0.29
+
+# data science
+numpy
+pandas
+fastparquet
+ta
+
+# API
+s3fs
+
+# utilities
+six>=1.14
+joblib
+future
+halo
+tqdm
+argparse
+
+numerapi
+boto3==1.24.59
+
+# build tools
+pytest
+flake8
+coverage
+autopep8
+black
+
+# tor
+stem
