@@ -8,7 +8,7 @@ select
     , low
     , "close"
 from
-    "signal-database"."{0}_signals_data"
+    "{0}-signals-database"."raw_data"
 where
     from_unixtime(timestamp / 1000000000) >= current_date - interval '540' day
 group by

@@ -8,6 +8,6 @@ select
     , low
     , "close"
 from
-    "signals"."yahoo"
+    "615955932111-signals-database"."raw_data"
 limit
     1

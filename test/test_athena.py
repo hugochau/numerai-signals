@@ -16,8 +16,11 @@ parentdir = os.path.dirname(currentdir)
 sys.path.append(f'{parentdir}/src/numerai_signals')
 
 from module.athena import Athena
+from module.app import App
 
 def test_succeeded_run_query():
+    App.set('aws_account_id', '615955932111')
+
     with open('src/numerai_signals/sql/data_dummy.sql', 'r') as f:
         sql_script = f.read()
 
