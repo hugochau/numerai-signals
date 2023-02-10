@@ -29,3 +29,11 @@ export AWS_PROFILE=jh_numerai
 # docker build --platform=linux/amd64 -t local_ubuntu
 
 
+aws logs describe-subscription-filters\
+    --region eu-west-1\
+    --log-group-name SignalsStack-SignalsLogLoad5DA8D8E6-pLhRC1d3Z7Yk
+
+aws logs delete-subscription-filter\
+    --region eu-west-1\
+    --log-group-name SignalsStack-SignalsLogLoad5DA8D8E6-pLhRC1d3Z7Yk\
+    --filter-name Test

@@ -90,52 +90,55 @@ def main():
     logger = Logger().logger
     logger.info(f"Begin")
 
-    # parse args
-    args = parse_args_load()
+    try:
+        # parse args
+        args = parse_args_load()
 
-    # set environment context
-    App.set("local", args.local)
+        # set environment context
+        App.set("local", args.local)
 
-    # define crawler boundaries
-    crawler_start_date = dt.datetime.strptime(args.start, "%y%m%d")
-    crawler_end_date = dt.datetime.strptime(args.end, "%y%m%d")
-    logger.info(
-        f'Crawler date range: {crawler_start_date.strftime("%y%m%d")} '
-        f'{crawler_end_date.strftime("%y%m%d")}'
-    )
+        # define crawler boundaries
+        crawler_start_date = dt.datetime.strptime(args.start, "%y%m%d")
+        crawler_end_date = dt.datetime.strptime(args.end, "%y%m%d")
+        logger.info(
+            f'Crawler date range: {crawler_start_date.strftime("%y%m%d")} '
+            f'{crawler_end_date.strftime("%y%m%d")}'
+        )
 
-    # download tickers them from numerai
-    logger.info(f"Collecting tickers")
-    tickers = get_yahoo_tickers(args.ticker, args.ntickers)
-    logger.info(f"Crawler coverage: {len(tickers)} tickers")
+        # download tickers them from numerai
+        logger.info(f"Collecting tickers")
+        tickers = get_yahoo_tickers(args.ticker, args.ntickers)
+        logger.info(f"Crawler coverage: {len(tickers)} tickers")
 
-    # run yahoo finance API crawler
-    df = Yahoo(tickers, crawler_start_date, crawler_end_date).load_data()
+        # run yahoo finance API crawler
+        df = Yahoo(tickers, crawler_start_date, crawler_end_date).load_data()
 
-    # optimize frame
-    df = optimise_frame(df)
+        # optimize frame
+        df = optimise_frame(df)
 
-    # split by day to enable file overwritting
-    days = df.sort_values(by=["timestamp"]).timestamp.unique()
+        # split by day to enable file overwritting
+        days = df.sort_values(by=["timestamp"]).timestamp.unique()
 
-    # get aws acount_id and initialize s3 resource
-    aws_account_id = Aws().get_account_id()
-    s3 = S3(f"{aws_account_id}-signals-data")
+        # get aws acount_id and initialize s3 resource
+        aws_account_id = Aws().get_account_id()
+        s3 = S3(f"{aws_account_id}-signals-data")
 
-    # call multi thread to empty partition folders
-    mtd = MultiThread()
-    mtd.execute(days, delete, {"s3": s3})
+        # call multi thread to empty partition folders
+        mtd = MultiThread()
+        mtd.execute(days, delete, {"s3": s3})
 
-    # call multi thread to upload files
-    mtu = MultiThread()
-    mtu.execute(days, upload, {"df": df, "s3": s3})
-    logger.info(f"Nfiles uploaded: {mtu.parse_upload()}")
+        # call multi thread to upload files
+        mtu = MultiThread()
+        mtu.execute(days, upload, {"df": df, "s3": s3})
+        logger.info(f"Nfiles uploaded: {mtu.parse_upload()}")
 
-    _time = round(time() - run_start_time, 2)
-    logger.info(f"Time taken: {round(_time/60, 2)}min ({_time}sec)")
-    logger.info("🔥")
+        _time = round(time() - run_start_time, 2)
+        logger.info(f"Time taken: {round(_time/60, 2)}min ({_time}sec)")
+        logger.info("🔥")
+
+    except Exception as e:
+        logger.error(e, exc_info=True)
 
 
 if __name__ == "__main__":
-
     main()

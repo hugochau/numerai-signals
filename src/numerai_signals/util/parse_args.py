@@ -131,7 +131,12 @@ def parse_args_all(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """
     # will tell AWS to load credential from file
     parser.add_argument(
-        "--local", required=False, action="store_const", const=True, default=False
+        "--local",
+        required=False,
+        action="store_const",
+        const=True,
+        default=False,
+        help="Enable credential based AWS session",
     )
 
     return parser

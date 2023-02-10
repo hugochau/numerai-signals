@@ -7,7 +7,12 @@ import * as glue_alpha from '@aws-cdk/aws-glue-alpha'
 import * as cdk from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as destinations from 'aws-cdk-lib/aws-logs-destinations';
 import { Construct } from 'constructs';
+import { addToDeadLetterQueueResourcePolicy } from "aws-cdk-lib/aws-events-targets";
 
 
 export class SignalsStack extends cdk.Stack {
@@ -96,16 +101,30 @@ export class SignalsStack extends cdk.Stack {
     });
 
     // create container image
+    const loadLogGroup = new logs.LogGroup(this, 'SignalsLogLoad', {
+      logGroupName: 'SignalsLogLoad',
+      retention: 30
+    });
+
+    const transformLogGroup = new logs.LogGroup(this, 'SignalsLogTransform', {
+      logGroupName: 'SignalsLogTransform',
+      retention: 30
+    });
+
     // load
     fargateTaskDefinitionLoad.addContainer("SignalsContainerLoad", {
       image: ecs.ContainerImage.fromAsset("./docker/load"),
-      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'signals', logRetention: 30 })
+      logging: ecs.LogDrivers.awsLogs({
+        streamPrefix: 'signals',
+        logGroup: loadLogGroup})
     });
 
     // transform
     fargateTaskDefinitionTransform.addContainer("SignalsContainerTransform", {
       image: ecs.ContainerImage.fromAsset("./docker/transform"),
-      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'signals', logRetention: 30 })
+      logging: ecs.LogDrivers.awsLogs({
+        streamPrefix: 'signals',
+        logGroup: transformLogGroup})
     });
 
     // create service
@@ -183,5 +202,55 @@ export class SignalsStack extends cdk.Stack {
         }]
       }
     });
+
+    // sns topic
+    const topic = new sns.Topic(this, 'SignalsTopic', {
+      topicName: 'SignalsTopic'
+    });
+
+    const lambdaRole = new iam.Role(this, 'SignalsLambdaRole', {
+      roleName: process.env.CDK_DEFAULT_ACCOUNT + '-signals-lambda-role',
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      description: 'SignalsLambdaRole',
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSNSFullAccess'),
+      ]
+    });
+
+    // lambda
+    const logLambda = new lambda.Function(this, 'SignalsLogLambda', {
+      functionName: 'SignalsLogLambda',
+      role: lambdaRole,
+      runtime: lambda.Runtime.PYTHON_3_9,
+      environment: {
+        'SNS_TOPIC_ARN': topic.topicArn
+      },
+      code: lambda.Code.fromAsset('lambda'),
+      handler: 'log_error.handler'
+    });
+
+    new logs.LogGroup(this, 'SignalsLambdaLogGroup', {
+        logGroupName: `/aws/lambda/${logLambda.functionName}`,
+        retention: logs.RetentionDays.ONE_WEEK,
+        removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+
+    new logs.SubscriptionFilter(this, 'SignalsLambdaLoadGroupSubscription', {
+      logGroup: loadLogGroup,
+      destination: new destinations.LambdaDestination(logLambda),
+      filterPattern: logs.FilterPattern.allTerms('ERROR'),
+    });
+
+    new logs.SubscriptionFilter(this, 'SignalsLambdaTransformGroupSubscription', {
+      logGroup: transformLogGroup,
+      destination: new destinations.LambdaDestination(logLambda),
+      filterPattern: logs.FilterPattern.allTerms('ERROR'),
+    });
+
+    logLambda.addPermission('SignalCloudwatchPermission', {
+      principal: new iam.ServicePrincipal('logs.amazonaws.com')
+    });
+
   }
 }

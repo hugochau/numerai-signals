@@ -28,14 +28,14 @@ then
         --ntickers $1\
         --local
 
-elif [ ${machine} == "Mac" ];
-then
-    # running inside local linux container
-    # requires aws credential solution
-    python3 src/numerai_signals/load.py\
-        --start $start_date\
-        --end $end_date\
-        --ntickers $1
+# elif [ ${machine} == "Mac" ];
+# then
+#     # running inside local linux container
+#     # requires aws credential solution
+#     python3 src/numerai_signals/load.py\
+#         --start $start_date\
+#         --end $end_date\
+#         --ntickers $1
 
 else
     python3 src/numerai_signals/load.py\
