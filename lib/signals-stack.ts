@@ -80,6 +80,7 @@ export class SignalsStack extends cdk.Stack {
     // create task definitions
     // load
     const fargateTaskDefinitionLoad = new ecs.FargateTaskDefinition(this, 'SignalsTaskDefLoad', {
+      family:'signals-load',
       memoryLimitMiB: 8192,
       cpu: 1024,
       taskRole: taskRole,
@@ -91,6 +92,7 @@ export class SignalsStack extends cdk.Stack {
 
     // transform
     const fargateTaskDefinitionTransform = new ecs.FargateTaskDefinition(this, 'SignalsTaskDefTransform', {
+      family:'signals-transform',
       memoryLimitMiB: 8192,
       cpu: 1024,
       taskRole: taskRole,
@@ -102,17 +104,18 @@ export class SignalsStack extends cdk.Stack {
 
     // create container image
     const loadLogGroup = new logs.LogGroup(this, 'SignalsLogLoad', {
-      logGroupName: 'SignalsLogLoad',
+      logGroupName: `/aws/fargate/${fargateTaskDefinitionLoad.family}`,
       retention: 30
     });
 
     const transformLogGroup = new logs.LogGroup(this, 'SignalsLogTransform', {
-      logGroupName: 'SignalsLogTransform',
+      logGroupName: `/aws/fargate/${fargateTaskDefinitionTransform.family}`,
       retention: 30
     });
 
     // load
     fargateTaskDefinitionLoad.addContainer("SignalsContainerLoad", {
+      containerName: fargateTaskDefinitionLoad.family,
       image: ecs.ContainerImage.fromAsset("./docker/load"),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'signals',
@@ -121,6 +124,7 @@ export class SignalsStack extends cdk.Stack {
 
     // transform
     fargateTaskDefinitionTransform.addContainer("SignalsContainerTransform", {
+      containerName: fargateTaskDefinitionTransform.family,
       image: ecs.ContainerImage.fromAsset("./docker/transform"),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'signals',
@@ -220,7 +224,7 @@ export class SignalsStack extends cdk.Stack {
 
     // lambda
     const logLambda = new lambda.Function(this, 'SignalsLogLambda', {
-      functionName: 'SignalsLogLambda',
+      functionName: 'signals-error-notification',
       role: lambdaRole,
       runtime: lambda.Runtime.PYTHON_3_9,
       environment: {
