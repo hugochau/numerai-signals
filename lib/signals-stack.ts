@@ -8,11 +8,13 @@ import * as cdk from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as destinations from 'aws-cdk-lib/aws-logs-destinations';
 import { Construct } from 'constructs';
-import { addToDeadLetterQueueResourcePolicy } from "aws-cdk-lib/aws-events-targets";
 
 
 export class SignalsStack extends cdk.Stack {
@@ -32,17 +34,6 @@ export class SignalsStack extends cdk.Stack {
           name: 'Public',
           cidrMask: 24,
         },
-        // {
-        //   cidrMask: 24,
-        //   name: 'Application',
-        //   subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
-        // },
-        // {
-        //   cidrMask: 24,
-        //   name: 'Private',
-        //   subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-        //   // reserved: true
-        // }
       ],
     });
 
@@ -51,16 +42,6 @@ export class SignalsStack extends cdk.Stack {
       clusterName: process.env.CDK_DEFAULT_ACCOUNT + '-signals-cluster',
       vpc: vpc
     });
-
-    // create ACM Permission Policy
-    // const describeAcmCertificates = new iam.PolicyDocument({
-    //   statements: [
-    //     new iam.PolicyStatement({
-    //       resources: ['arn:aws:acm:*:*:certificate/*'],
-    //       actions: ['acm:DescribeCertificate'],
-    //     }),
-    //   ],
-    // });
 
     // create role for our tasks
     const taskRole = new iam.Role(this, 'SignalsTaskRole', {
@@ -131,14 +112,6 @@ export class SignalsStack extends cdk.Stack {
         logGroup: transformLogGroup})
     });
 
-    // create service
-    // new ecs.FargateService(this, 'SignalsService', {
-    //   cluster: cluster,
-    //   taskDefinition: fargateTaskDefinitionLoad,
-    //   assignPublicIp: true,
-    //   desiredCount: 0
-    // });
-
     // create cron event
     // target
     const eventRuleTargetLoad = new targets.EcsTask( {
@@ -177,15 +150,121 @@ export class SignalsStack extends cdk.Stack {
       bucketName: process.env.CDK_DEFAULT_ACCOUNT + '-athena',
     });
 
+    // sns topic
+    const s3eventTopic = new sns.Topic(this, 'SignalsS3EventsTopic', {
+      topicName: 'signals-s3-events'
+    });
+
+    const topicPolicy = new sns.TopicPolicy(this, 'SignalsS3EventsTopicPolicy', {
+      topics: [s3eventTopic],
+    });
+  
+    topicPolicy.document.addStatements(new iam.PolicyStatement({
+      sid: "s3_to_sns_events_stmt_1",
+      effect: iam.Effect.ALLOW,
+      principals: [new iam.ServicePrincipal('s3.amazonaws.com')],
+      actions: ["sns:Publish"],
+      resources: [s3eventTopic.topicArn],
+      conditions: {
+        "StringEquals": {"aws:SourceAccount": process.env.CDK_DEFAULT_ACCOUNT},
+        "ArnLike": {"aws:SourceArn": "arn:aws:s3:*:*:" + s3Bucket_signals.bucketName}
+      }
+    }));
+
+    s3Bucket_signals.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.SnsDestination(s3eventTopic),
+      {prefix: 'raw_data'}
+    );
+
+    const crawlerS3Policy = new iam.ManagedPolicy(this, 'SignalsCrawlerS3Policy', {
+      managedPolicyName: 'signals-glue-crawler-s3-policy',
+      document: new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              "s3:GetObject",
+              "s3:PutObject"
+            ],
+            resources: [
+              "arn:aws:s3:::" + s3Bucket_signals.bucketName + "/raw_data/*"
+            ],
+          })
+        ]
+      })
+    });
+
+    const crawlerSQSPolicy = new iam.ManagedPolicy(this, 'SignalsCrawlerSQSPolicy', {
+      managedPolicyName: 'signals-glue-crawler-sqs-policy',
+      document: new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+              "sqs:DeleteMessage",
+              "sqs:GetQueueUrl",
+              "sqs:ListDeadLetterSourceQueues",
+              "sqs:ChangeMessageVisibility",
+              "sqs:PurgeQueue",
+              "sqs:ReceiveMessage",
+              "sqs:GetQueueAttributes",
+              "sqs:ListQueueTags",
+              "sqs:SetQueueAttributes"
+            ],
+            resources: [
+              "arn:aws:sqs:us-east-1:"
+                + process.env.CDK_DEFAULT_ACCOUNT
+                + ":"
+                + s3eventTopic.topicName
+            ],
+          })
+        ]
+      })
+    });
+
     const glueRole = new iam.Role(this, 'SignalsGlueRole', {
       roleName: process.env.CDK_DEFAULT_ACCOUNT + '-signals-glue-role',
       assumedBy: new iam.ServicePrincipal('glue.amazonaws.com'),
       description: 'SignalsGlueRole',
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSGlueServiceRole'),
-        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
+        // iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
+        crawlerS3Policy,
+        crawlerSQSPolicy
       ]
     });
+
+    // sql queue
+    const sqsQueue = new sqs.Queue(this, 'SignalsQueue', {
+      queueName: 'signals-s3-events'
+    });
+
+    s3eventTopic.addSubscription(new subscriptions.SqsSubscription(sqsQueue));
+
+    const queuePolicy = new sqs.QueuePolicy(this, 'SignalsQueuePolicy', {
+      queues: [sqsQueue],
+    });
+
+    queuePolicy.document.addStatements(
+      new iam.PolicyStatement({
+        sid: "VisualEditor0",
+        effect: iam.Effect.ALLOW,
+        principals: [glueRole],
+        actions: ["sqs:*"],
+        resources: ["*"]
+      }),
+      new iam.PolicyStatement({
+        sid: "topic-subscription-arn:" + s3eventTopic.topicArn,
+        effect: iam.Effect.ALLOW,
+        principals: [new iam.ServicePrincipal('sns.amazonaws.com')],
+        actions: ["sqs:SendMessage"],
+        resources: [sqsQueue.queueArn],
+        conditions: {
+          "ArnLike": {"aws:SourceArn": s3eventTopic.topicArn}
+        }
+      }),
+    );
 
     const glue_db = new glue_alpha.Database(this, 'SignalsDatabase', {
       databaseName: process.env.CDK_DEFAULT_ACCOUNT + '-signals-database',
@@ -197,19 +276,18 @@ export class SignalsStack extends cdk.Stack {
       databaseName: glue_db.databaseName,
       targets: {
         s3Targets: [{
-          // connectionName: 'connectionName',
-          // dlqEventQueueArn: 'dlqEventQueueArn',
-          // eventQueueArn: 'eventQueueArn',
-          // exclusions: ['exclusions'],
+          eventQueueArn: sqsQueue.queueArn,
           path: s3Bucket_signals.bucketName + '/raw_data',
-          // sampleSize: 123,
         }]
-      }
+      },
+      recrawlPolicy: {
+        recrawlBehavior: 'CRAWL_EVENT_MODE',
+      },
     });
 
     // sns topic
-    const topic = new sns.Topic(this, 'SignalsTopic', {
-      topicName: 'SignalsTopic'
+    const logTopic = new sns.Topic(this, 'SignalsLogTopic', {
+      topicName: 'signals-logs'
     });
 
     const lambdaRole = new iam.Role(this, 'SignalsLambdaRole', {
@@ -228,7 +306,7 @@ export class SignalsStack extends cdk.Stack {
       role: lambdaRole,
       runtime: lambda.Runtime.PYTHON_3_9,
       environment: {
-        'SNS_TOPIC_ARN': topic.topicArn
+        'SNS_TOPIC_ARN': logTopic.topicArn
       },
       code: lambda.Code.fromAsset('lambda'),
       handler: 'log_error.handler'
