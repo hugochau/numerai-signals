@@ -16,7 +16,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.append(f'{parentdir}/src/numerai_signals')
 
-from module.s3 import S3
+from module.aws.s3 import S3
 
 
 @pytest.fixture

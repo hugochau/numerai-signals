@@ -213,7 +213,7 @@ export class SignalsStack extends cdk.Stack {
               "sqs:SetQueueAttributes"
             ],
             resources: [
-              "arn:aws:sqs:us-east-1:"
+              "arn:aws:sqs:eu-west-1:"
                 + process.env.CDK_DEFAULT_ACCOUNT
                 + ":"
                 + s3eventTopic.topicName
@@ -229,7 +229,6 @@ export class SignalsStack extends cdk.Stack {
       description: 'SignalsGlueRole',
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSGlueServiceRole'),
-        // iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
         crawlerS3Policy,
         crawlerSQSPolicy
       ]

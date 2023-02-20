@@ -9,7 +9,7 @@ __email__ = "numerai_2021@protonmail.com"
 
 from module.logger.logger import Logger
 from module.app import App
-from module.aws import Aws
+from module.aws.aws import Aws
 
 logger = Logger().logger
 

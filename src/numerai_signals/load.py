@@ -18,8 +18,8 @@ from module.yahoo import Yahoo
 from module.app import App
 from module.multi_thread import MultiThread
 from module.exception import OperationalException
-from module.aws import Aws
-from module.s3 import S3
+from module.aws.aws import Aws
+from module.aws.s3 import S3
 from util.get_tickers import get_yahoo_tickers
 from util.parse_args import parse_args_load
 from util.optimise_frame import optimise_frame

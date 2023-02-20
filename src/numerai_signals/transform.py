@@ -14,10 +14,11 @@ import pandas as pd
 
 from module.logger.logger import Logger
 from module.exception import OperationalException
-from module.s3 import S3
-from module.athena import Athena
 from module.multi_thread import MultiThread
-from module.aws import Aws
+from module.aws.aws import Aws
+from module.aws.s3 import S3
+from module.aws.athena import Athena
+from module.aws.glue import Glue
 from module.app import App
 from module.transformer import Transformer
 from util.parse_args import parse_args_transform
@@ -53,25 +54,43 @@ def transform(params):
 
 
 def main():
-    run_start_time = time()
+    """
+    The main function
+    """
     logger = Logger().logger
     logger.info(f"Begin")
 
     try:
+        run_start_time = time()
+
         # parser args
         args = parse_args_transform()
 
         # set context
+        # if args.local is true
+        # we'll be working with credential based AWS connection
         App.set("local", args.local)
-        App.set("aws_account_id", Aws().get_account_id())
+        App.set("aws_account_id", Aws().get_account_id())  # aws dev or prod account
 
+        # these are the lags we will apply to our TA features
+        if args.lags:  # not required, default is 5
+            App.set("lags", int(args.lags))
+
+        # part 1: load data
+        # reload raw data. this is the default behavior
         if args.reload:
+            # crawl raw data folder to push latest updates to athena
+            Glue().run_crawler(f'{App.config("aws_account_id")}-signals-crawler')
+
+            # prepare sql script
             logger.info("Running query")
             with open("src/numerai_signals/sql/data.sql", "r") as f:
                 sql_script = f.read().format(App.config("aws_account_id"))
 
+            # run it against athena db
             (query_result, query_execution_id) = Athena().run_query(sql_script)
 
+            # download query output if it succeded
             if query_result == "SUCCEEDED":
                 S3(f"{App.config('aws_account_id')}-athena").download_file(
                     f"{query_execution_id}.csv", "data/transform/data.csv"
@@ -80,6 +99,8 @@ def main():
             else:
                 raise OperationalException("Reload operation failed. Exiting.")
 
+        # part 2: transform data
+        # load data into frame
         logger.info("Load data")
         df = pd.read_csv("data/transform/data.csv")
         df["timestamp"] = pd.to_datetime(df["timestamp"])
@@ -87,10 +108,6 @@ def main():
         start_date = datetime.date.today()
         end_date = start_date - datetime.timedelta(days=540)  # 660?
         df[df["timestamp"].dt.date.between(end_date, start_date)]
-
-        # Declare the variables that will be required later
-        if args.lags:
-            App.set("lags", int(args.lags))
 
         logger.info("Let's go 🔥")
         tickers = list(df.ticker.unique())

@@ -16,7 +16,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.append(f'{parentdir}/src/numerai_signals')
 
-from module.aws import Aws
+from module.aws.aws import Aws
 from module.app import App
 from module.logger.logger import Logger
 

@@ -161,16 +161,17 @@ docker run -t signals_load/transform
 
 ## Infrastructure
 
-Stack is made of the following AWS components:
-- EventBridge cron rules to trigger Fargate tasks at fixed schedule
-- ECS/FargateTasks to run modules
-- S3 bucket to store data
-- Glue to crawl raw data and create database/tables
-- Athena to query data lake
-- CloudWatch log groups to persists logs
-- CloudWatch subscription filters to trigger lambda function on error
-- Lambda to parse logs and send content to SNS
-- SNS topics to send error messages to user
+Stack consists in several services connected together:
+- EventBridge rules triggerring Fargate tasks at a fixed schedule
+- ECS/FargateTasks for hosting modules
+- S3 bucket for storing raw data
+- SNS/SQS for delivering s3 bucket update events to the crawler
+- Glue for recrawling raw data bucket by event and creating/updating database/tables
+- Athena for querying database
+- CloudWatch log groups for saving logs
+- CloudWatch subscription filters for triggerring lambda notification function on error
+- Lambda for parsing logs and sending content to SNS
+- SNS topics for delivering error messages to subcribers
 
 ![Infrastructure](doc/Signals_stack.png)
 

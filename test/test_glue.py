@@ -15,15 +15,18 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.append(f'{parentdir}/src/numerai_signals')
 
-from module.aws.athena import Athena
+from module.aws.glue import Glue
 from module.app import App
 
-def test_succeeded_run_query():
-    App.set('aws_account_id', '615955932111')
+App.set('aws_account_id', '615955932111')
 
-    with open('src/numerai_signals/sql/data_dummy.sql', 'r') as f:
-        sql_script = f.read()
+def test_get_crawler_state():
 
-    query_result = Athena().run_query(sql_script)[0]
+    state = Glue().get_crawler_state('615955932111-signals-crawler')
 
-    assert query_result == 'SUCCEEDED'
+    assert state == 'READY'
+
+def test_get_crawler_result():
+    result = Glue().get_crawler_result('615955932111-signals-crawler')
+
+    assert result['LogGroup'] == '/aws-glue/crawlers'

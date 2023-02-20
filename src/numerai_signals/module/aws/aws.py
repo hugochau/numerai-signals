@@ -1,7 +1,7 @@
 """
 aws.py
 
-Implements S3
+Implements Aws
 """
 
 __author__ = "Julien Lefebvre, Hugo Chauvary"
