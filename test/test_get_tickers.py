@@ -21,7 +21,7 @@ from util.get_tickers import get_yahoo_tickers
 
 
 def test_get_yahoo_tickers_ticker():
-    assert get_yahoo_tickers(ticker='000060.KS') == ['000060.KS']
+    assert get_yahoo_tickers(ticker='AAPL') == ['AAPL']
 
 
 def test_get_yahoo_tickers_nticker():

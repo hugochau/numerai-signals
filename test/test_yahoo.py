@@ -30,7 +30,15 @@ def test_yahoo_empty_request():
     Expect OperationalException raised as empty request
     """
     crawler_start_date = dt.datetime.strptime('220301', '%y%m%d')
+    crawler_start_date = crawler_start_date.replace(
+        tzinfo=dt.timezone.utc
+    ).timestamp()
+
     crawler_end_date = dt.datetime.strptime('220302', '%y%m%d')
+    crawler_end_date = crawler_end_date.replace(
+        tzinfo=dt.timezone.utc
+    ).timestamp()
+
     tickers = get_yahoo_tickers()[:1]
     Yahoo(tickers, crawler_start_date, crawler_end_date).load_data()
 
@@ -40,7 +48,15 @@ def test_yahoo_valid_request():
     Expect OperationalException raised as empty request
     """
     crawler_start_date = dt.datetime.strptime('220301', '%y%m%d')
+    crawler_start_date = crawler_start_date.replace(
+        tzinfo=dt.timezone.utc
+    ).timestamp()
+
     crawler_end_date = dt.datetime.strptime('220303', '%y%m%d')
+    crawler_end_date = crawler_end_date.replace(
+        tzinfo=dt.timezone.utc
+    ).timestamp()
+
     tickers = get_yahoo_tickers()[:1]
     df = Yahoo(tickers, crawler_start_date, crawler_end_date).load_data()
 
