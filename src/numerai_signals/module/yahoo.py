@@ -49,8 +49,8 @@ class Yahoo:
 
         # define request parameters
         params = dict(
-            period1=int(self.start.timestamp()),
-            period2=int(self.end.timestamp()),
+            period1=int(self.start),
+            period2=int(self.end),
             interval="1d",
             events="div,splits",
         )

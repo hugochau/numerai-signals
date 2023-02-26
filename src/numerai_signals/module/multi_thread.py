@@ -36,19 +36,39 @@ class MultiThread:
         for task in as_completed(self.processes):
             response = task.result()
             try:
-                # quote
+                # indicators
+                # open, high, low, close, volume
                 quote = response["chart"]["result"][0]["indicators"]["quote"][0]
+                # creating frame from this indicator dict
                 df_tmp = pd.DataFrame.from_dict(quote)
 
+                # adding metadata
                 # ticker
                 df_tmp["ticker"] = response["chart"]["result"][0]["meta"]["symbol"]
 
                 # timestamp
-                df_tmp["timestamp"] = response["chart"]["result"][0]["timestamp"]
+                # we combine utc timestamp with gmtoffset
+                # in order to get local timestamp
+                # this avoids getting timestamp outside of [start, end[
+                # in particular for those ticker in gmt+X timezones
+                utc_timestamp = response["chart"]["result"][0]["timestamp"]
+                gmt_offset = response["chart"]["result"][0]["meta"]["gmtoffset"]
+                local_timestamp = []
+                for ts in utc_timestamp:
+                    local_timestamp.append(ts + gmt_offset)
+
+                df_tmp["timestamp"] = local_timestamp
                 df_tmp["timestamp"] = pd.to_datetime(df_tmp["timestamp"], unit="s")
 
                 # currency
                 df_tmp["currency"] = response["chart"]["result"][0]["meta"]["currency"]
+
+                # limit to one result per day = stock opening time
+                # its is not clear what the other entries are meant for
+                df_tmp.sort_values(by=["timestamp"])
+                df_tmp["date"] = df_tmp.timestamp.dt.date
+                df_tmp.drop_duplicates(subset=["date"], inplace=True)
+                df_tmp.drop(columns=["date"], inplace=True)
 
                 df = df.append(df_tmp)
 

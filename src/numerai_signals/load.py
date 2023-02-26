@@ -101,9 +101,17 @@ def main():
         crawler_start_date = dt.datetime.strptime(args.start, "%y%m%d")
         crawler_end_date = dt.datetime.strptime(args.end, "%y%m%d")
         logger.info(
-            f'Crawler date range: {crawler_start_date.strftime("%y%m%d")} '
-            f'{crawler_end_date.strftime("%y%m%d")}'
+            f'Crawler date range: [{crawler_start_date.strftime("%y%m%d")}, '
+            f'{crawler_end_date.strftime("%y%m%d")}['
         )
+
+        # converting start and end date to timestamp
+        # somehow tzinfo is not utc so we replace it first
+        # and the convert to timestamp
+        crawler_start_date = crawler_start_date.replace(
+            tzinfo=dt.timezone.utc
+        ).timestamp()
+        crawler_end_date = crawler_end_date.replace(tzinfo=dt.timezone.utc).timestamp()
 
         # download tickers them from numerai
         logger.info(f"Collecting tickers")

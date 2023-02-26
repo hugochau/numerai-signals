@@ -1,3 +1,6 @@
+# :arg $1 ntickers: how many tickers to load
+# :arg $2 local [optional]: credential based AWS connection
+
 # checking machine type because
 # date function has different syntax on mac
 unameOut="$(uname -s)"
