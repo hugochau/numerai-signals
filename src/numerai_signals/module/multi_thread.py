@@ -17,24 +17,38 @@ logger = Logger().logger
 
 
 class MultiThread:
+    """
+    Enabling multi threading
+    """
+
     def __init__(self) -> None:
         self.processes = []
 
-    def execute(self, tasks, function, params=None):
+    def execute(self, tasks, function, params=None) -> None:
+        """
+        Our thread pool executor. Basically excecutes processes in parallel.
+
+        ::param: tasks: list of tasks. can be day, urls, etc.
+        ::param function: function to apply to each task
+        ::param params: function parameters
+        """
         with ThreadPoolExecutor(max_workers=100) as executor:
             for task in tasks:
                 # send jobs to pool
-                logger.info(f"Executing {task}")
-                # proc_params = {"task": task, "params": params, "count": tasks.index(task)}
+                # logger.info(f"Executing {task}")
                 proc_params = {"task": task, "params": params}
                 self.processes.append(executor.submit(function, proc_params))
 
     def parse_yahoo(self):
+        """
+        Parse curl_url responses and put result into dataframe
+        """
+        # init df
         df = pd.DataFrame()
 
         # parse responses into tuple and append to final frame
         for task in as_completed(self.processes):
-            response = task.result()
+            response = task.result()[1]
             try:
                 # indicators
                 # open, high, low, close, volume
@@ -57,24 +71,33 @@ class MultiThread:
                 for ts in utc_timestamp:
                     local_timestamp.append(ts + gmt_offset)
 
+                # using local timestamp
                 df_tmp["timestamp"] = local_timestamp
                 df_tmp["timestamp"] = pd.to_datetime(df_tmp["timestamp"], unit="s")
 
                 # currency
                 df_tmp["currency"] = response["chart"]["result"][0]["meta"]["currency"]
+                # exchange
+                df_tmp["exchange"] = response["chart"]["result"][0]["meta"][
+                    "exchangeName"
+                ]
 
-                # limit to one result per day = stock opening time
+                # limit to one result per day = earliest time
                 # its is not clear what the other entries are meant for
                 df_tmp.sort_values(by=["timestamp"])
                 df_tmp["date"] = df_tmp.timestamp.dt.date
                 df_tmp.drop_duplicates(subset=["date"], inplace=True)
+
+                # replace timestamp with date
+                # intraday is not considered for now
+                df_tmp["timestamp"] = pd.to_datetime(df_tmp["date"])
                 df_tmp.drop(columns=["date"], inplace=True)
 
                 df = df.append(df_tmp)
 
             except Exception as e:
                 # pass if could not parse response
-                logger.info(f"Exception: {e}")
+                logger.info(f"Exception {task.result()[0]}: {e}")
                 pass
 
         return df

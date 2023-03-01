@@ -14,9 +14,9 @@ esac
 
 if [ ${machine} == "Mac" ];
 then
-    start_date=$(date -v -2d '+%y%m%d')
+    start_date=$(date -v -5d '+%y%m%d')
 else
-    start_date=$(date -d '2 days ago' '+%y%m%d')
+    start_date=$(date -d '5 days ago' '+%y%m%d')
 fi
 
 end_date=$(date '+%y%m%d')
@@ -45,4 +45,5 @@ else
         --start $start_date\
         --end $end_date\
         --ntickers $1
+        # --ticker $1
 fi

@@ -18,8 +18,9 @@ logger = Logger().logger
 
 class Yahoo:
     """
-    Purpose of this class is to curl yahoo finance API
-    and parse result into proper dataframe
+    Purpose of this class:
+        - curl yahoo finance API
+        - parse result in dataframe
     """
 
     def __init__(self, tickers: list, start: str, end: str):
@@ -27,10 +28,10 @@ class Yahoo:
         Class constructor
 
         ::param tickers: list of tickers to crawl
-        ::param start: crawler start date
-        ::param end: crawler end date
+        ::param start: crawler start date, unix UTC timestamp
+        ::param end: crawler end date, unix UTC timestamp
 
-        ex: Yahoo('AMZN', '221001', '221002')
+        ex: Yahoo('AMZN', 'XXXXX', 'YYYYY')
         """
         self.tickers = tickers
         self.start = start
@@ -48,15 +49,19 @@ class Yahoo:
         urls = [f"{api_url}/{ticker}" for ticker in self.tickers]
 
         # define request parameters
+        # period2 is inclusive so we put -1 to exclude upper boundary
+        # [start, end - 1] = [start, end[
         params = dict(
             period1=int(self.start),
-            period2=int(self.end),
+            period2=int(self.end) - 1,
             interval="1d",
-            events="div,splits",
+            # events="div,splits",
+            events="history",
         )
 
         # call multi thread to curl urls
         mt = MultiThread()
+        # one process per URL - ticker - to curl
         mt.execute(urls, curl_url, params)
         df = mt.parse_yahoo()
 

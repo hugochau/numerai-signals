@@ -15,7 +15,7 @@ def validate_load_args(**kwargs):
     # validate date range is in ascending order
     if "start" in kwargs and "end" in kwargs:
         try:
-            assert int(kwargs["start"]) < int(kwargs["end"])
+            assert int(kwargs["start"]) <= int(kwargs["end"])
 
         except AssertionError as e:
             raise e
@@ -127,7 +127,8 @@ def parse_args_all(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     Add common arguments
 
     ::param parser
-    :: return parser, incl. common args
+
+    ::return parser, incl. common args
     """
     # will tell AWS to load credential from file
     parser.add_argument(

@@ -9,4 +9,4 @@ WORKDIR /app
 
 RUN pip3 install -r requirements.txt
 
-CMD ./load.sh 1000
+CMD ./load.sh 5000

@@ -1,8 +1,11 @@
 """
 curl_url.py
 
-Define custom exceptions
+Define curl_url
 """
+
+__author__ = "Julien Lefebvre, Hugo Chauvary"
+__email__ = "numerai_2021@protonmail.com"
 
 import requests
 import random
@@ -15,23 +18,29 @@ logger = Logger().logger
 
 def curl_url(params: dict) -> dict:
     """
-    Basic funtion to request data from the API
+    Curl URL
 
-    ::param url: crawled URL
-    ::param: params: request parameters
+    ::param: params
+        - task: url, requested URL
+        - params: request parameters
+            period1 lower boundary, inclusive
+            period2 upper boundary, inclusive
+            interval=1d
+            events=history
 
     ::return response data
     """
+    url = params["task"]
     try:
         data = requests.get(
-            url=params["task"],
+            url=url,
             params=params["params"],
             headers={"User-Agent": random.choice(USER_AGENTS)},
         )
 
-        return data.json()
+        return [url, data.json()]
 
     except Exception as e:
         # pass if could not parse response
-        logger.info(f"Exception: {e}")
+        logger.info(f"Exception {url}: {e}")
         pass
