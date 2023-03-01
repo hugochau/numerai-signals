@@ -41,6 +41,7 @@ def curl_url(params: dict) -> dict:
         return [url, data.json()]
 
     except Exception as e:
-        # pass if could not parse response
-        logger.info(f"Exception {url}: {e}")
-        pass
+        # return none if exception
+        # logger.info(f"Exception {url}: {e}")
+        return [url, None]
+
