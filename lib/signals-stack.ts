@@ -156,7 +156,7 @@ export class SignalsStack extends cdk.Stack {
     // cron rules
     new events.Rule(this, "SignalsRuleLoad", {
       ruleName: process.env.CDK_DEFAULT_ACCOUNT + "-signals-load-cron",
-      schedule: events.Schedule.cron({ hour: "*/12", minute: "0" }),
+      schedule: events.Schedule.cron({ hour: "23", minute: "0" }),
       targets: [eventRuleTargetLoad],
     });
 
@@ -180,12 +180,14 @@ export class SignalsStack extends cdk.Stack {
     // signals-data
     const s3Bucket_signals = new s3.Bucket(this, "SignalsRawDataBucket", {
       bucketName: process.env.CDK_DEFAULT_ACCOUNT + "-signals-data",
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       // encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
     // athena
     new s3.Bucket(this, "SignalsAthenaBucket", {
       bucketName: process.env.CDK_DEFAULT_ACCOUNT + "-athena",
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
     /*

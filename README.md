@@ -3,22 +3,168 @@
 ## Outline
 
 This document covers:
-- package purpose
-- prerequisites
-- installation
-- code build
-- ETLs 
-- docker files for contenarization
-- cdk scripts for architecture definition and cloud deployment
+- project context
+- infrastructure
+- package structure
+- development
+- tasks definitions
+- containers
 - CI/CD pipeline
+- license
+- contact
 
-## Purpose
+## Project context
 
-In a nutshell, this project provides processed financial data that is used for training our Signals models. Two distinct phases:
+In a nutshell, this project is the first stage of our ML pipeline for numerai signals. Visit the [official page](https://docs.numer.ai/numerai-signals/signals-overview) for more information.
+
+It processes financial data that is later used for training our Signals models. Two distinct phases:
 - Load: extract financial data from Yahoo Finance and load it into the data lake
 - Transform: Transform raw data using technical analysis library
 
-## Prerequisite
+## Infrastructure
+
+We leverage AWS products. The stack contains the following components:
+
+- EventBridge rules `signals-load` & `signals-transform`: trigger the tasks at a fixed schedule
+- EC2 VPC `signals-vpc`: host the cluster
+- ECS cluster `signals-cluster`: deploy tasks
+- Fargate tasks `signals-load` & `signals-transform`: define tasks
+- S3 bucket `signal-data`: store data
+- S3 bucket `signal-athena`: store athena queries results
+- SNS topc `signals-s3-events`: forward s3 update events
+- SQS queue `signals-queue`: retain messages and deliver to crawler when triggered
+- Glue crawler `signals-crawler`: crawl raw data bucket
+- Glue database `signals-database`: store data catalog
+- Athena: query database
+- CloudWatch log groups `signals-load` & `signals-transform`: persist fargate tasks logs
+- CloudWatch subscription filter: trigger lambda notification function on error
+- Lambda function `signals-error-notification`: parse error from log and forward message to SNS.
+- SNS topic `signals-log`: email error notifications
+
+![Infrastructure](doc/Signals_stack.png)
+
+We use AWS CDK to define the stack. See `lib/signals-stack.ts`.
+
+## Package Structure
+
+At a glance:
+- `./bin`: CDK app
+- `./data`: Data
+- `./docker`: Docker containers
+- `./lambda`: Lambda handlers
+- `./lib`: CDK construct
+- `./src`: Python mdules
+- `./test`: Python unit/integration tests
+
+```bash
+.
+├── LICENSE.md
+├── Makefile
+├── Pipfile
+├── README.md
+├── bin
+├── cdk.json
+├── data
+│   ├── config
+│   │   ├── blank
+│   │   └── ticker_corrections.json
+│   ├── credential
+│   │   ├── aws.csv
+│   │   └── blank
+│   ├── hello.txt
+│   ├── log
+│   │   └── blank
+│   ├── raw_data
+│   │   └── blank
+│   └── transform
+│       └── blank
+├── deploy.sh
+├── doc
+├── docker
+│   ├── load
+│   │   ├── Dockerfile
+│   ├── transform
+│   │   ├── Dockerfile
+│   └── ubuntu
+│       └── Dockerfile
+├── jest.config.js
+├── lambda
+│   └── log_error.py
+├── lib
+│   ├── signals-pipeline-stack.ts
+│   ├── signals-pipeline-stage.ts
+│   └── signals-stack.ts
+├── load.sh
+├── notebook
+│   └── notebook.py
+├── package-lock.json
+├── package.json
+├── requirements.txt
+├── setup.cfg
+├── setup.py
+├── src
+│   └── numerai_signals
+│       ├── config
+│       │   └── constant.py
+│       ├── load.py
+│       ├── module
+│       │   ├── app.py
+│       │   ├── aws
+│       │   │   ├── athena.py
+│       │   │   ├── aws.py
+│       │   │   ├── glue.py
+│       │   │   └── s3.py
+│       │   ├── exception.py
+│       │   ├── logger
+│       │   │   ├── __init__.py
+│       │   │   ├── _formatter.py
+│       │   │   ├── adapter.py
+│       │   │   └── logger.py
+│       │   ├── multi_thread.py
+│       │   ├── tor.py
+│       │   ├── transformer.py
+│       │   └── yahoo.py
+│       ├── sql
+│       │   ├── data.sql
+│       │   └── data_dummy.sql
+│       ├── transform.py
+│       └── util
+│           ├── __init__.py
+│           ├── __pycache__
+│           ├── curl_url.py
+│           ├── get_aws_creds.py
+│           ├── get_tickers.py
+│           ├── log_item.py
+│           ├── optimise_frame.py
+│           └── parse_args.py
+├── test
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_app.py
+│   ├── test_athena.py
+│   ├── test_aws.py
+│   ├── test_get_tickers.py
+│   ├── test_glue.py
+│   ├── test_multi_thread.py
+│   ├── test_s3.py
+│   ├── test_validate_args.py
+│   └── test_yahoo.py
+├── transform.sh
+└── tsconfig.json
+```
+
+NB:
+- Make sure to have a `data/credential/aws.csv` if you choose to connect to AWS using credential solution. Format:
+
+```
+access_key_id,secret_access_key
+XXXX,YYYYY
+```
+
+
+
+## Development
+### Prerequisite
 
 Before participating to this project, you need to have installed in your development environment:
 - python
@@ -29,11 +175,10 @@ Before participating to this project, you need to have installed in your develop
 
 Please check related installation guidelines. Also note you need access to have AWS prod/dev accounts enabled.
 
-## Installation
+### Installation
 
 You can fin required python dependencies in `requirements.txt`. Suggested installation steps using python dedicated package module `pipenv` :
 
-###
 ```bash
 # create virtual environment
 pipenv shell
@@ -43,7 +188,7 @@ pipenv shell
 pip install -r requirements.txt
 ```
 
-## Build (Optional)
+### Makefile
 
 Although python is not a compiled language, we provide test coverage and other build mechanisms in a `Makefile` fashion. You may use the following command to 'compile' your python application:
 
@@ -61,7 +206,7 @@ make all
 coverage run -m pytest -v && coverage report -m
 ```
 
-## ETLs
+## Tasks definitions
 
 ### Load
 
@@ -128,11 +273,12 @@ python src/numerai_signals/transform.py\
     --local
 ```
 
-## Docker
+## Containers
 
-We embed our modules into docker containers before depploying them on AWS, our cloud service provider.
+We embed our functions into docker containers before depploying them on AWS, our cloud service provider.
 
-NB: Note we work on ARM64 based architecures and not X86.
+NB:
+- Note we work on ARM64 based architecures and not X86.
 
 ### Ubuntu
 
@@ -159,31 +305,15 @@ docker build \
 docker run -t signals_load/transform
 ```
 
-## Infrastructure
-
-Stack consists in several services connected together:
-- EventBridge rules triggerring Fargate tasks at a fixed schedule
-- ECS/FargateTasks for hosting modules
-- S3 bucket for storing raw data
-- SNS/SQS for delivering s3 bucket update events to the crawler
-- Glue for recrawling raw data bucket by event and creating/updating database/tables
-- Athena for querying database
-- CloudWatch log groups for saving logs
-- CloudWatch subscription filters for triggerring lambda notification function on error
-- Lambda for parsing logs and sending content to SNS
-- SNS topics for delivering error messages to subcribers
-
-![Infrastructure](doc/Signals_stack.png)
-
-We use AWS CDK to automate releases. See `lib/signals-stack.ts`.
-
-## CI/CD
+## CI/CD pipeline
 
 We enable CI/CD by creating a stack for our Pipeline. We use AWS CDK coupled with an EventBridge standard event to automate pipeline self mutation before stack release. See`lib/signals-pipeline-stack.ts` and `lib/signals-pipeline-stage.ts`.
 
 Deployment approach followed by devs is summarized in picture below.
 
 ![Infrastructure](doc/AWS_stack.png)
+
+NB: dev/prod accounts are linked using Organization. This enables unified cost management.
 
 ### How to deploy to live
 
@@ -196,3 +326,11 @@ Deployment approach followed by devs is summarized in picture below.
 ```bash
 ./deploy.sh dev
 ```
+## License
+
+This project is licensed under MIT. See [LICENSE](LICENSE.md)
+
+
+## Contact
+
+Feel free to write us at numerai_2021@protonmail.com.
