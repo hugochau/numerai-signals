@@ -66,18 +66,10 @@ At a glance:
 ├── cdk.json
 ├── data
 │   ├── config
-│   │   ├── blank
-│   │   └── ticker_corrections.json
 │   ├── credential
-│   │   ├── aws.csv
-│   │   └── blank
-│   ├── hello.txt
 │   ├── log
-│   │   └── blank
 │   ├── raw_data
-│   │   └── blank
 │   └── transform
-│       └── blank
 ├── deploy.sh
 ├── doc
 ├── docker
@@ -89,14 +81,9 @@ At a glance:
 │       └── Dockerfile
 ├── jest.config.js
 ├── lambda
-│   └── log_error.py
 ├── lib
-│   ├── signals-pipeline-stack.ts
-│   ├── signals-pipeline-stage.ts
-│   └── signals-stack.ts
 ├── load.sh
 ├── notebook
-│   └── notebook.py
 ├── package-lock.json
 ├── package.json
 ├── requirements.txt
@@ -105,50 +92,14 @@ At a glance:
 ├── src
 │   └── numerai_signals
 │       ├── config
-│       │   └── constant.py
-│       ├── load.py
 │       ├── module
-│       │   ├── app.py
 │       │   ├── aws
-│       │   │   ├── athena.py
-│       │   │   ├── aws.py
-│       │   │   ├── glue.py
-│       │   │   └── s3.py
-│       │   ├── exception.py
-│       │   ├── logger
-│       │   │   ├── __init__.py
-│       │   │   ├── _formatter.py
-│       │   │   ├── adapter.py
-│       │   │   └── logger.py
-│       │   ├── multi_thread.py
-│       │   ├── tor.py
-│       │   ├── transformer.py
-│       │   └── yahoo.py
+│       │   └── logger
 │       ├── sql
-│       │   ├── data.sql
-│       │   └── data_dummy.sql
-│       ├── transform.py
-│       └── util
-│           ├── __init__.py
-│           ├── __pycache__
-│           ├── curl_url.py
-│           ├── get_aws_creds.py
-│           ├── get_tickers.py
-│           ├── log_item.py
-│           ├── optimise_frame.py
-│           └── parse_args.py
+│       ├── util
+│       ├── load.py
+│       └── transform.py
 ├── test
-│   ├── __init__.py
-│   ├── conftest.py
-│   ├── test_app.py
-│   ├── test_athena.py
-│   ├── test_aws.py
-│   ├── test_get_tickers.py
-│   ├── test_glue.py
-│   ├── test_multi_thread.py
-│   ├── test_s3.py
-│   ├── test_validate_args.py
-│   └── test_yahoo.py
 ├── transform.sh
 └── tsconfig.json
 ```
