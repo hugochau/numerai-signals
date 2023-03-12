@@ -7,6 +7,9 @@ Implements Athena
 __author__ = "Julien Lefebvre, Hugo Chauvary"
 __email__ = "numerai_2021@protonmail.com"
 
+
+import threading
+
 from module.logger.logger import Logger
 from module.app import App
 from module.aws.aws import Aws
@@ -68,6 +71,7 @@ class Athena:
                 )
 
                 query_status = response_execution["QueryExecution"]["Status"]["State"]
+                threading.Event().wait(3)
 
         logger.info(f"Query {query_status}")
         return (query_status, response_execution_start["QueryExecutionId"])

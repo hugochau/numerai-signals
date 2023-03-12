@@ -11,6 +11,7 @@ from time import time
 import datetime
 
 import pandas as pd
+import numpy as np
 
 from module.logger.logger import Logger
 from module.exception import OperationalException
@@ -40,12 +41,15 @@ def transform(params):
         df_ticker.sort_values(by=["timestamp"], inplace=True)
 
         # This is where the magic happens
+        logger.info(f"processing {ticker}")
         df_ticker = getattr(trans, f"{cmd}_indicators")(df_ticker)
+
         for i in df_ticker.columns[3:]:
             df_ticker = trans.shifter(df_ticker, i)
 
         df_ticker = optimise_frame(df_ticker)
         df_ticker = df_ticker[df_ticker["timestamp"].dt.weekday == 4]
+        logger.info(f"processed {ticker}")
 
         return df_ticker
 
@@ -110,14 +114,13 @@ def main():
         df[df["timestamp"].dt.date.between(end_date, start_date)]
 
         logger.info("Let's go 🔥")
-        tickers = list(df.ticker.unique())
+        tickers = list(np.sort(df.ticker.unique()))
 
         # call multi thread to compute features
         mt = MultiThread()
         mt.execute(tickers, transform, {"df": df, "cmd": args.cmd})
         df_out = mt.parse_transform()
 
-        # df_out.to_parquet(f"data/transform/transform.parquet", index=False)
         df_out.to_csv(f"data/transform/transform.csv", index=False)
 
         logger.info(f"Uploading file")
@@ -127,9 +130,9 @@ def main():
         )
 
         logger.info(f"Nrows published: {len(df_out.index)}")
-
-        _time = round(time() - run_start_time, 2)
-        logger.info(f"Time taken: {_time/60}min ({_time}sec)")
+        _time_sec = round(time() - run_start_time, 2)
+        _time_min = round(_time_sec / 60, 2)
+        logger.info(f"Time taken: {_time_min} min ({_time_sec} sec)")
         logger.info("🔥")
 
     except Exception as e:

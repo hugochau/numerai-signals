@@ -32,6 +32,7 @@ def curl_url(params: dict) -> dict:
     """
     url = params["task"]
     try:
+        logger.info(f"Crawling {url}")
         data = requests.get(
             url=url,
             params=params["params"],
@@ -42,6 +43,5 @@ def curl_url(params: dict) -> dict:
 
     except Exception as e:
         # return none if exception
-        # logger.info(f"Exception {url}: {e}")
+        logger.info(f"Exception {url}: {e}")
         return [url, None]
-

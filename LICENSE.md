@@ -1,6 +1,6 @@
 MIT License
 
-License Copyright: (c) 2023 Hugo Chauvary  
+License Copyright: (c) 2023 Julien Lefebvre Hugo Chauvary  
 License Contact: numerai_2021@protonmail.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

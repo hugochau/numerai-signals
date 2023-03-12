@@ -202,6 +202,8 @@ This will return a dataframe with the volume indicators, each shifted 5 times
 and cleaned for NAs', i.e. the dataset will have lost 5 days of data at the beginning Furthermore, downcasting is performed on all floats to reduce the total memory
 used by the program.
 
+We use TA python package. Doc: https://technical-analysis-library-in-python.readthedocs.io/
+
 Using `transform.py`:
 
 ```bash

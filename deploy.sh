@@ -20,8 +20,9 @@ else
 fi
 
 # build/deploy cdk app
-npm install
-npm ci
-npm run build
-npx cdk synth
+# npm install
+# npm ci
+# npm run build
+# npx cdk synth
+cdk diff
 cdk deploy --force

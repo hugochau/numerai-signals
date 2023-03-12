@@ -32,7 +32,12 @@ class MultiThread:
         ::param function: function to apply to each task
         ::param params: function parameters
         """
-        with ThreadPoolExecutor(max_workers=100) as executor:
+        # if max_workers is None or not giveng, it will default to the number of processors
+        # on the machine, multiplied by 5
+        # assuming that ThreadPoolExecutor is often used to overlap I/O
+        # instead of CPU work and the number of workers should be higher
+        # than the number of workers for ProcessPoolExecutor.
+        with ThreadPoolExecutor() as executor:
             for task in tasks:
                 # send jobs to pool
                 # logger.info(f"Executing {task}")

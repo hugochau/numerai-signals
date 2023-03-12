@@ -2,23 +2,28 @@
 #          INSTALL & TEST
 # ----------------------------------
 install:
+	@echo 'install'
 	@pip install -r requirements.txt
 
 check:
+	@echo 'check'
 	@flake8 src/numerai_signals/*.py
 	@flake8 src/numerai_signals/module/*.py
 	@flake8 src/numerai_signals/util/*.py
 
 black:
+	@echo 'black'
 	@black src/numerai_signals/*.py
 	@black src/numerai_signals/module/*.py
 	@black src/numerai_signals/util/*.py
 
 test:
+	@echo 'test'
 	@coverage run -m pytest -v
 	@coverage report -m
 
 clean:
+	@echo 'clean'
 	@rm -f */version.txt
 	@rm -f .coverage
 	@rm -fr */__pycache__ */*.pyc __pycache__
@@ -27,6 +32,7 @@ clean:
 	@rm -fr numerai_signals.egg-info
 
 copy:
+	@echo 'copy'
 	@find docker/load -type f -not -name 'Dockerfile' -delete
 	@find docker/transform -type f -not -name 'Dockerfile' -delete
 	@find docker/ubuntu -type f -not -name 'Dockerfile' -delete
