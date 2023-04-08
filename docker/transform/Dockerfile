@@ -7,6 +7,7 @@ RUN mkdir -p /app
 ADD . /app
 WORKDIR /app
 
+RUN pip3 install setuptools
 RUN pip3 install -r requirements.txt
 
 CMD ./transform.sh
